@@ -8,15 +8,31 @@ elhadrines@gmail.com
 # imports
 from discord.ext import tasks
 import discord
+import json
+import time
 
 
 class Bot(discord.Client):
     """
     Les messages que le bot envoie dans le channel
     """
+
     def __init__(self, *args, **kwargs):
         discord.Client.__init__(self, *args, **kwargs)
         self.counter = 0
+
+        self.load_events()
+
+    def load_events(self):
+        """load the dict of all events stored"""
+        with open('events.json', 'r') as file:
+            eventsstr = file.read()
+        self.events = json.loads(eventsstr)
+
+    def save_events(self):
+        """saves the events in the file events.json"""
+        with open('events.json', 'w') as file:
+            file.write(json.dumps(self.events))
 
     async def on_ready(self):
         print(f'Logged in as {self.user} (ID: {self.user.id})')
@@ -26,7 +42,22 @@ class Bot(discord.Client):
             return
 
         if message.content.startswith('$hello'):
-            await message.channel.send('Hello!')
+            # test du bot avec $hello
+            self.events[str(message.author)] = time.time()
+            self.save_events()
+            await message.channel.send(time.strftime("Hello! Nous sommes le %d/%m/%Y et il est %H:%M:%S",
+                                                     time.gmtime(self.events[str(message.author)])))
+
+        elif message.content.startswith('$reserve'):
+            try:
+                assert message.content[8] == ' '  # un espace apres $reserve
+                plage = message.content[9:].split(' ')  # recuperer les plages horaires
+                print(plage)
+                heure_debut = time.mktime(time.strptime(plage[0] + ' ' + plage[1], "%d/%m/%Y %H:%M"))
+                heure_fin = time.mktime(time.strptime(plage[0] + ' ' + plage[2], "%d/%m/%Y %H:%M"))
+                print(heure_debut, heure_fin)
+            except:
+                await message.channel.send("Le format de réservation est : `$reserve JJ/MM/AAAA hh:mm hh:mm`")
 
     async def setup_hook(self) -> None:
         self.tache_arrplan.start()
