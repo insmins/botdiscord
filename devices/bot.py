@@ -41,32 +41,39 @@ class Bot(discord.Client):
         if message.author == self.user:
             return
 
-        if message.content.startswith('$hello'):
-            # test du bot avec $hello
-            self.events[str(message.author)] = time.time()
-            self.save_events()
-            await message.channel.send(time.strftime("Hello! Nous sommes le %d/%m/%Y et il est %H:%M:%S",
-                                                     time.gmtime(self.events[str(message.author)])))
-
-        elif message.content.startswith('$reserve'):
+        if message.content.startswith('$reserve'):
             try:
                 assert message.content[8] == ' '  # un espace apres $reserve
                 plage = message.content[9:].split(' ')  # recuperer les plages horaires
                 print(plage)
                 heure_debut = time.mktime(time.strptime(plage[0] + ' ' + plage[1], "%d/%m/%Y %H:%M"))
                 heure_fin = time.mktime(time.strptime(plage[0] + ' ' + plage[2], "%d/%m/%Y %H:%M"))
+                assert heure_debut < heure_fin
                 print(heure_debut, heure_fin)
             except:
                 await message.channel.send("Le format de réservation est : `$reserve JJ/MM/AAAA hh:mm hh:mm`")
+                return
+            self.events["debuts"][str(message.author)] = heure_debut
+            self.events["fins"][str(message.author)] = heure_fin
+            self.events["users"][str(message.author)] = message.author.id
+            self.save_events()
+            await message.channel.send(time.strftime("Succès. Vous avez réservé le %d/%m/%Y de %H:%M",
+                                                     time.localtime(heure_debut)) +
+                                       time.strftime(" à %H:%M.",
+                                                     time.localtime(heure_fin)))
 
     async def setup_hook(self) -> None:
         self.tache_arrplan.start()
 
     @tasks.loop(seconds=60)
     async def tache_arrplan(self):
-        channel = self.get_channel(1185600265882173472)
-        self.counter += 1
-        await channel.send(str(self.counter))
+        for i, (k, v) in enumerate(self.events["debuts"].items()):
+            if v - time.time() < 300:
+                channel = self.get_channel(1185600265882173472)
+                await channel.send("f")
+
+
+
 
     @tache_arrplan.before_loop
     async def before_my_task(self):
