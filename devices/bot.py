@@ -53,9 +53,8 @@ class Bot(discord.Client):
             except:
                 await message.channel.send("Le format de réservation est : `$reserve JJ/MM/AAAA hh:mm hh:mm`")
                 return
-            self.events["debuts"][str(message.author)] = heure_debut
-            self.events["fins"][str(message.author)] = heure_fin
-            self.events["users"][str(message.author)] = message.author.id
+            self.events["debuts"][str(message.author.id)] = heure_debut
+            self.events["fins"][str(message.author.id)] = heure_fin
             self.save_events()
             await message.channel.send(time.strftime("Succès. Vous avez réservé le %d/%m/%Y de %H:%M",
                                                      time.localtime(heure_debut)) +
@@ -68,9 +67,9 @@ class Bot(discord.Client):
     @tasks.loop(seconds=60)
     async def tache_arrplan(self):
         for i, (k, v) in enumerate(self.events["debuts"].items()):
-            if v - time.time() < 300:
+            if v - time.time() < 60:
                 channel = self.get_channel(1185600265882173472)
-                await channel.send("f")
+                await channel.send(f"<@{k}>, tu as réservé ta salle.")
 
 
 
