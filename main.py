@@ -1,24 +1,22 @@
+"""
+Main program for the bot
+16/12/2023
+Inès El Hadri
+elhadrines@gmail.com
+"""
+
 import discord
 import os
 from dotenv import load_dotenv
+from devices.bot import Bot
 
+# pour le .env
 load_dotenv()
 
+# ?? jcp mais nécessaire
 intents = discord.Intents.default()
 intents.message_content = True
+client = Bot(intents=intents)
 
-client = discord.Client(intents=intents)
-
-@client.event
-async def on_ready():
-    print('We have logged in as {0.user}'.format(client))
-
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
-    if message.content.startswith('$hello'):
-        await message.channel.send('Hello!')
-
+# run bot
 client.run(os.getenv('TOKEN'))
