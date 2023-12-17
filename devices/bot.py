@@ -76,7 +76,8 @@ class Bot(discord.Client):
             user = await self.fetch_user(v['id'])
             if v['debut'] - time.time() < 600 and not v['rappel']:
                 await user.send(f"<@{v['id']}>, tu as réservé ta salle pour dans 10min")
-                self.events[user]['rappel'] = True
+                self.events[user.name]['rappel'] = True
+                self.save_events()
 
     @tache_arrplan.before_loop
     async def before_my_task(self):
