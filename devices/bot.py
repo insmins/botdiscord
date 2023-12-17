@@ -34,6 +34,21 @@ class Bot(discord.Client):
         with open('events.json', 'w') as file:
             file.write(json.dumps(self.events))
 
+    def event_superpose(self, debut1, debut2, fin1, fin2):
+        """si deux events se superposent"""
+        if debut1 <= debut2 < fin1:
+            return True
+        if debut2 <= debut1 < fin2:
+            return True
+        return False
+
+    def events_superpose(self, debut2, fin2):
+        """si un event se superpose à ceux du dictionnaire"""
+        for i, (k, v) in enumerate(self.events.items()):
+            if self.event_superpose(v['debut'], debut2, v['fin'], fin2):
+                return True
+        return False
+
     async def on_ready(self):
         """when the bot is ready"""
         print(f'Logged in as {self.user} (ID: {self.user.id})')
@@ -43,6 +58,7 @@ class Bot(discord.Client):
         if message.author == self.user:
             return
 
+        # pour la réservation :
         if message.content.startswith('$reserve'):
             try:
                 assert message.content[8] == ' '  # un espace apres $reserve
@@ -56,6 +72,10 @@ class Bot(discord.Client):
                 await message.channel.send("Le format de réservation est : `$reserve JJ/MM/AAAA hh:mm hh:mm`")
                 return
 
+            if self.events_superpose(heure_debut, heure_fin):
+                await message.channel.send("La date superpose une autre date.")
+                return
+
             self.events[message.author.name] = {}
             self.events[message.author.name]['id'] = message.author.id
             self.events[message.author.name]['debut'] = heure_debut
@@ -67,11 +87,19 @@ class Bot(discord.Client):
                                        time.strftime(" à %H:%M.",
                                                      time.localtime(heure_fin)))
 
+
+        # pour supprimer sa réservation
+        if message.content.startswith('$delete'):
+            del self.events[message.author.name]
+            self.save_events()
+            await message.channel.send("Succès.")
+
     async def setup_hook(self) -> None:
         self.tache_arrplan.start()
 
     @tasks.loop(seconds=60)
     async def tache_arrplan(self):
+        """envoie un mp 10min avant qu'une réservation ait lieu"""
         for i, (k, v) in enumerate(self.events.items()):
             user = await self.fetch_user(v['id'])
             if v['debut'] - time.time() < 600 and not v['rappel']:
