@@ -87,12 +87,22 @@ class Bot(discord.Client):
                                        time.strftime(" à %H:%M.",
                                                      time.localtime(heure_fin)))
 
-
         # pour supprimer sa réservation
         if message.content.startswith('$delete'):
             del self.events[message.author.name]
             self.save_events()
             await message.channel.send("Succès.")
+
+        if message.content.startswith('$calendrier'):
+            msg = "```date\t\tdebut\tfin  \tauteur\n"
+            for i, (k, v) in enumerate(self.events.items()):
+                user = await self.fetch_user(v['id'])
+                msg = (msg + time.strftime("%d/%m/%y\t%H:%M", time.localtime(v['debut']))
+                       + "\t" + time.strftime("%H:%M", time.localtime(v['fin']))
+                       + "\t" + user.global_name
+                       + '\n')
+            msg = msg + '```'
+            await message.channel.send(msg)
 
     async def setup_hook(self) -> None:
         self.tache_arrplan.start()
